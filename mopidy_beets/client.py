@@ -159,7 +159,7 @@ class BeetsRemoteClient(object):
                 # Try to add a simple regex filter, if we look for a string.
                 # This will reduce the ressource consumption of the query on
                 # the server side (and for our 'exact' matching below).
-                if exact_text and isinstance(value, str):
+                if exact_text and isinstance(value, str) and False:
                     regex_query = "^{}$".format(re.escape(value))
                     beets_query = "{}::{}".format(
                         quote_and_encode(key), quote_and_encode(regex_query)

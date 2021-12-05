@@ -2,7 +2,7 @@ import logging
 import re
 
 from mopidy import backend, models
-from mopidy.models import SearchResult
+from mopidy.models import SearchResult, Image
 
 from mopidy_beets.browsers.albums import (
     AlbumsByArtistBrowser,
@@ -145,6 +145,22 @@ class BeetsLibraryProvider(backend.LibraryProvider):
         )
         return SearchResult(uri="beets:search-" + uri, tracks=tracks)
 
+    def get_images(self, uris):
+        images = {}
+        for uri in uris:
+            path, item_id = parse_uri(uri, uri_prefix=self.root_directory.uri)
+            if path == "album":
+                try:
+                    album_id = int(item_id)
+                except ValueError:
+                    logger.error("Beets - invalid album ID in URI: %s", uri)
+                    continue
+                url = self.remote.get_album_art_url(album_id)
+                if url is not None:
+                    images[uri] = [Image(uri=url)]
+
+        return images
+
     def lookup(self, uri=None, uris=None):
         logger.debug("Beets lookup: %s", uri or uris)
         if uri:
@@ -167,7 +183,11 @@ class BeetsLibraryProvider(backend.LibraryProvider):
                 )
                 # Append composer tracks to the artist tracks (unique items).
                 tracks = list(set(artist_tracks + composer_tracks))
-                tracks.sort(key=lambda t: (t.date, t.disc_no, t.track_no))
+                #logger.debug("tracks: %r", tracks)
+                #for t in tracks:
+                #    logger.debug("date: %r, disc_no %r, track_no %r", t.date, t.disc_no, t.track_no)
+                #logger.debug("types: %r, %r", type(tracks), type(tracks[0]))
+                tracks.sort(key=lambda t: (t.date, t.disc_no or 0, t.track_no or 99))
             else:
                 logger.info("Unknown Beets lookup URI: %s", uri)
                 tracks = []
